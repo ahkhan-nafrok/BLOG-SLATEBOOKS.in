@@ -1,49 +1,97 @@
 ---
-import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
-import Header from '../components/Header.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+// src/pages/index.astro
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HeroSlider from '../components/HeroSlider.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog'))
+  .filter(post => !post.data.draft)
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+// Top 3 posts → hero slider
+const slides = posts.slice(0, 3).map(post => ({
+  title:       post.data.title,
+  tag:         post.data.tags?.[0] ?? null,
+  description: post.data.description,
+  href:        `/blog/${post.id}/`,
+  image:       post.data.heroImage ?? null,
+}));
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-	</head>
-	<body>
-		<Header />
-		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
-			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This template
-				serves as a lightweight, minimally-styled starting point for anyone looking to build a personal
-				website, blog, or portfolio with Astro.
-			</p>
-			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
-			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
-			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
-			</ul>
-			<p>
-				Have fun! If you get stuck, remember to
-				<a href="https://docs.astro.build/">read the docs</a>
-				or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
-			</p>
-			<p>
-				Looking for a blog template with a bit more personality? Check out
-				<a href="https://github.com/Charca/astro-blog-template">astro-blog-template</a>
-				by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
-			</p>
-		</main>
-		<Footer />
-	</body>
-</html>
+<BaseLayout
+  title="Slatebooks Journal — Notebooks, Gaming, and More"
+  description="Stories, guides, and ideas from the world of premium gaming and anime notebooks."
+>
+
+  <!-- ── Hero Slider ─────────────────────────── -->
+  {slides.length > 0
+    ? <HeroSlider slides={slides} />
+    : (
+      <section class="max-w-6xl mx-auto px-6 py-32 text-center">
+        <p class="text-zinc-700 tracking-widest uppercase text-xs">No articles yet</p>
+      </section>
+    )
+  }
+
+  <!-- ── Journal & News ─────────────────────── -->
+  {posts.length > 0 && (
+    <section class="max-w-6xl mx-auto px-6 py-16">
+
+      <!-- Section header -->
+      <div class="flex items-end justify-between pb-6 mb-10 border-b border-zinc-900">
+        <div>
+          <p class="text-xs tracking-widest uppercase text-zinc-600 mb-2">Latest</p>
+          <h2 class="text-2xl sm:text-3xl font-light text-white">Journal & News</h2>
+        </div>
+      </div>
+
+      <!-- Post grid -->
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-14">
+        {posts.map(post => (
+          <a href={`/blog/${post.id}/`} class="group">
+
+            <!-- Cover image -->
+            <div class="aspect-[16/9] bg-zinc-900 overflow-hidden mb-5">
+              {post.data.heroImage ? (
+                <img
+                  src={post.data.heroImage}
+                  alt={post.data.title}
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+              ) : (
+                <div class="w-full h-full bg-zinc-900" />
+              )}
+            </div>
+
+            <!-- Tag -->
+            {post.data.tags && post.data.tags.length > 0 && (
+              <p class="text-xs tracking-widest uppercase text-zinc-600 mb-2">
+                {post.data.tags[0]}
+              </p>
+            )}
+
+            <!-- Title -->
+            <h3 class="text-base font-light text-white leading-snug mb-3 group-hover:text-zinc-300 transition-colors duration-200">
+              {post.data.title}
+            </h3>
+
+            <!-- Description -->
+            <p class="text-sm font-light text-zinc-500 leading-relaxed mb-4">
+              {post.data.description}
+            </p>
+
+            <!-- Date -->
+            <time class="text-xs tracking-widest uppercase text-zinc-700">
+              {new Date(post.data.pubDate).toLocaleDateString('en-IN', {
+                year: 'numeric', month: 'long', day: 'numeric'
+              })}
+            </time>
+
+          </a>
+        ))}
+      </div>
+
+    </section>
+  )}
+
+</BaseLayout>
