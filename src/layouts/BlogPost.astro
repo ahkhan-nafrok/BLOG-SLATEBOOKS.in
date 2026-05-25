@@ -1,86 +1,99 @@
 ---
-import { Image } from 'astro:assets';
-import type { CollectionEntry } from 'astro:content';
-import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
-import FormattedDate from '../components/FormattedDate.astro';
-import Header from '../components/Header.astro';
+import BaseLayout from './BaseLayout.astro';
 
-type Props = CollectionEntry<'blog'>['data'];
+const { title, description, pubDate, updatedDate, heroImage, tags } = Astro.props;
 
-const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
+const formattedDate = new Date(pubDate).toLocaleDateString('en-IN', {
+  year: 'numeric', month: 'long', day: 'numeric'
+});
+
+const articleSchema = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: title,
+  description: description,
+  image: heroImage || 'https://blog.slatebooks.in/images/og-default.jpg',
+  datePublished: pubDate,
+  dateModified: updatedDate || pubDate,
+  author: {
+    '@type': 'Organization',
+    name: 'Slatebooks',
+    url: 'https://slatebooks.in',
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: 'Slatebooks',
+    url: 'https://slatebooks.in',
+  },
+});
 ---
 
-<html lang="en">
-	<head>
-		<BaseHead title={title} description={description} />
-		<style>
-			main {
-				width: calc(100% - 2em);
-				max-width: 100%;
-				margin: 0;
-			}
-			.hero-image {
-				width: 100%;
-			}
-			.hero-image img {
-				display: block;
-				margin: 0 auto;
-				border-radius: 12px;
-				box-shadow: var(--box-shadow);
-			}
-			.prose {
-				width: 720px;
-				max-width: calc(100% - 2em);
-				margin: auto;
-				padding: 1em;
-				color: rgb(var(--gray-dark));
-			}
-			.title {
-				margin-bottom: 1em;
-				padding: 1em 0;
-				text-align: center;
-				line-height: 1;
-			}
-			.title h1 {
-				margin: 0 0 0.5em 0;
-			}
-			.date {
-				margin-bottom: 0.5em;
-				color: rgb(var(--gray));
-			}
-			.last-updated-on {
-				font-style: italic;
-			}
-		</style>
-	</head>
+<BaseLayout title={`${title} — Slatebooks Journal`} description={description} ogImage={heroImage}>
 
-	<body>
-		<Header />
-		<main>
-			<article>
-				<div class="hero-image">
-					{heroImage && <Image width={1020} height={510} src={heroImage} alt="" />}
-				</div>
-				<div class="prose">
-					<div class="title">
-						<div class="date">
-							<FormattedDate date={pubDate} />
-							{
-								updatedDate && (
-									<div class="last-updated-on">
-										Last updated on <FormattedDate date={updatedDate} />
-									</div>
-								)
-							}
-						</div>
-						<h1>{title}</h1>
-						<hr />
-					</div>
-					<slot />
-				</div>
-			</article>
-		</main>
-		<Footer />
-	</body>
-</html>
+  <script type="application/ld+json" set:html={articleSchema} />
+
+  <!-- Cover image -->
+  {heroImage && (
+    <div class="w-full max-h-[480px] overflow-hidden bg-zinc-900">
+      <img src={heroImage} alt={title} class="w-full h-full object-cover" />
+    </div>
+  )}
+
+  <article class="max-w-2xl mx-auto px-6 py-16">
+
+    <!-- Tags -->
+    {tags && tags.length > 0 && (
+      <div class="flex gap-3 mb-6">
+        {tags.map((tag) => (
+          <span class="text-xs tracking-widest uppercase text-zinc-600 border border-zinc-800 px-3 py-1">
+            {tag}
+          </span>
+        ))}
+      </div>
+    )}
+
+    <!-- Title -->
+    <h1 class="text-3xl sm:text-4xl font-light text-white leading-tight mb-4">
+      {title}
+    </h1>
+
+    <!-- Description -->
+    <p class="text-zinc-400 text-lg font-light mb-8 leading-relaxed">
+      {description}
+    </p>
+
+    <!-- Date -->
+    <div class="flex items-center gap-4 pb-10 border-b border-zinc-900 mb-10">
+      <time class="text-xs tracking-widest uppercase text-zinc-700">
+        {formattedDate}
+      </time>
+      {updatedDate && (
+        <span class="text-xs tracking-widest uppercase text-zinc-800">
+          Updated {new Date(updatedDate).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}
+        </span>
+      )}
+    </div>
+
+    <!-- Body -->
+    <div class="prose prose-invert prose-zinc max-w-none
+                prose-headings:font-light prose-headings:tracking-tight prose-headings:text-white
+                prose-p:text-zinc-400 prose-p:leading-relaxed prose-p:font-light
+                prose-a:text-white prose-a:underline prose-a:underline-offset-4 hover:prose-a:text-zinc-300
+                prose-strong:text-white prose-strong:font-medium
+                prose-blockquote:border-zinc-800 prose-blockquote:text-zinc-500
+                prose-code:text-zinc-300 prose-code:bg-zinc-900 prose-code:px-1.5 prose-code:py-0.5
+                prose-pre:bg-zinc-950 prose-pre:border prose-pre:border-zinc-800
+                prose-img:w-full prose-hr:border-zinc-900">
+      <slot />
+    </div>
+
+    <!-- Back link -->
+    <div class="mt-16 pt-8 border-t border-zinc-900">
+      <a href="/" class="text-xs tracking-widest uppercase text-zinc-600 hover:text-white transition-colors">
+        ← All Articles
+      </a>
+    </div>
+
+  </article>
+
+</BaseLayout>
